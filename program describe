@@ -1,0 +1,133 @@
+库的主要功能：提供穿透防火墙的的靠数据传输功能。
+	1）向远端服务器注册本机
+	2）获取本机特定udp端口的对外地址
+	3）获取指定的客户机的udp端口的对外地址
+	4）提供可靠的数据传输
+	5）向指定主机定时发送心跳
+
+类的基本描述：
+class CReliablePenetrableUDP
+{
+public 函数：
+	在指定的Ip地址和端口上创建udp通信-Create
+	向远端服务器注册已经创建的udp通信-Register
+	获取已经创建的udp通信的对外Ip和端口-GetLocalPublicIpAndPort
+	获取已经创建的udp通信的本地Ip和端口-GetLanIpAndPort
+	获取指定的客户机的udp端口的对外地址-GetRemotePublicIpAndPort
+	向指定的客户机发送数据-Sendto
+	从远端的客户机接收数据-Recvfrom
+	向指定主机发送心跳-Heartbeat
+private 成员变量：
+	提供可靠数据传输的udp socket-reliableUDP
+	指向拥有该udp通信的用户信息指针-ptrClientInfo
+	指向该udp通信的服务器的信息指针-ptrSvrInfo;
+}
+
+函数说明：
+CReliablePenetrableUDP::Create(lanIp, lanPort)
+参数说明：
+	lanIp:指定的本机Ip地址
+	lanPort：指定的本机端口号
+功能说明：
+	用指定的Ip地址和端口号在本机中创建udp通信，该地址和端口就是用于和远端服务器和远端客户机进行通信的本地Ip地址和端口号。
+
+流程说明：
+	创建reliableUDP并绑定指定Ip地址和端口
+	初始化ptrClientInfo
+	初始化ptrSvrInfo
+
+
+CReliablePenetrableUDP::Register(serIp, serPort)
+参数说明：
+	serIp:指定的服务器的Ip地址
+	serPort：指定的服务器的端口号
+功能说明：
+	向远端服务器注册穿透服务。注册时需要提供客户ID，客户签名。
+
+流程说明：
+	创建一个用于注册的cmd对象
+	将该对象信息通过reliableUDP发送到服务器
+	接收服务器的响应信息
+	验证信息的可靠性
+	从服务器返回的命令中获取本机的对外Ip地址和端口号
+
+
+CReliablePenetrableUDP::GetLocalPublicIpAndPort(ptrLocalPublicIp, ptrLocatPublicPort)
+参数说明：
+	ptrLocalPublicIp:用于获取本地公网的Ip地址指针
+	ptrLocatPublicPort：用于获取本地公网的端口指针
+功能说明：
+	获取已经创建的udp通信的对外Ip和端口
+
+流程说明：
+	判断该对象是否已经向服务器注册
+	直接从ptrClientInfo中获取公网Ip和端口
+
+
+CReliablePenetrableUDP::GetLanIpAndPort(ptrLanIp, ptrLanPort)
+参数说明：
+	ptrLanIp:用于获取本地的Ip地址指针
+	ptrLanPort：用于获取本地的端口指针
+功能说明：
+	获取已经创建的udp通信的Ip和端口
+
+流程说明：
+	判断该对象是否已经向服务器注册
+	直接从ptrClientInfo中获取公网Ip和端口
+
+
+CReliablePenetrableUDP::GetRemotePublicIpAndPort(ptrRemoteClientInfo)
+参数说明：
+	ptrRemoteClientInfo指定需要获取的客户端ID，函数返回后里面存放对应的客户端的Ip地址和端口
+功能说明：
+	在ptrRemoteClientInfo中指定客户端ID后，从远端服务器中获取该ID对应的外网Ip和端口
+
+流程说明：
+	创建一个用于获取指定客户机信息的cmd对象
+	将该对象信息通过reliableUDP发送到服务器
+	接收服务器的响应信息
+	验证信息的可靠性
+	将信息填充到ptrRemoteClientInfo所指的空间中
+
+
+CReliablePenetrableUDP::Sendto(ptrCmd，destIp, destPort)
+参数说明：
+	ptrCmd里面填充了客户ID、客户签名、命令类型和命令内容，destIp为目标客户机Ip,destPort为目标客户机端口
+功能说明：
+	将指定的命令发送指定的目标地址
+
+流程说明：
+	将ptrCmd所指的内容序列化成char数组
+	调用reliableUDP的Sendto将char数组发送出去
+
+
+CReliablePenetrableUDP::Recvfrom(ptrCmd，ptrSrcIp, ptrSrcPort)
+参数说明：
+	将收到的数据填充到ptrCmd所指的地址中，如果用户指定了ptrSrcIp和ptrSrcPort则将数据的源地址和源端口填充到ptrSrcIp和ptrSrcPort所指的空间中。
+功能说明：
+	从监听的端口中接收命令，并获取该命令的源地址和源端口
+
+流程说明：
+	调用reliableUDP的Recvfrom获取消息
+	将消息格式化成Cmd形式
+	如果指定了ptrSrcIp和ptrSrcPort则将消息的源地址填充进去，否则直接返回
+
+
+CReliablePenetrableUDP::Heartbeat(ptrDestIp, ptrDestPort)
+参数说明：
+	ptrDestIp和ptrDestPort是目标主机的Ip地址和端口
+功能说明：
+	向目标主机发送心跳信息
+
+流程说明：
+	创建用于发送心跳信息的Cmd对象
+	将Cmd对象序列化成char数组
+	调用reliableUDP的Sendto将心跳信息发送到目标主机
+
+
+
+
+
+
+
+
